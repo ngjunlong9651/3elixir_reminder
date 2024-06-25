@@ -1,26 +1,25 @@
 import requests
 import os
-import logging
-
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import logging
+
+# Set up logging
+logging.basicConfig(
+    filename='cron_reminder.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Load environment variables
 load_dotenv()
 
-# Set up logging to a file
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(message)s",
-)
-
-logger = logging.getLogger(__name__)
-
-
 def main():
+    logging.info("Starting the cron job script.")
+
     prod_url = os.environ.get("PROD_URL")
     if prod_url is None:
-        print("Error: PROD_URL is not set in the environment variables.")
+        logging.error("Error: PROD_URL is not set in the environment variables.")
         return
     
     endpoint = f"{prod_url}/api/orders"
@@ -44,18 +43,24 @@ def main():
         data = response.json()  # Parse the JSON response
         orders = data.get('data', [])  # Extract orders from 'data' field
         
+        logging.info(f"Received {len(orders)} orders from the API.")
+
         upcoming_orders = [
             order for order in orders
             if 'fulfilmentEnd' in order['attributes'] and datetime.strptime(order['attributes']['fulfilmentEnd'], '%Y-%m-%dT%H:%M:%S.%fZ') < current_time + timedelta(hours=48)
         ]
         
+        logging.info(f"Found {len(upcoming_orders)} upcoming orders within 48 hours.")
+
         for order in upcoming_orders:
             attributes = order['attributes']
-            print(f"Order ID: {order['id']}, Fulfilment End: {attributes['fulfilmentEnd']}")
+            logging.info(f"Order ID: {order['id']}, Fulfilment End: {attributes['fulfilmentEnd']}")
     except requests.exceptions.RequestException as e:
-        print(f"Error during API call: {e}")
+        logging.error(f"Error during API call: {e}")
     except KeyError as e:
-        print(f"KeyError: {e}")
+        logging.error(f"KeyError: {e}")
+
+    logging.info("Cron job script finished.")
 
 # Call the function to test it
 if __name__ == "__main__":
