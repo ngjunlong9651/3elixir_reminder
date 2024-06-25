@@ -1,10 +1,21 @@
 import requests
 import os
+import logging
+
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
 # Load environment variables
 load_dotenv()
+
+# Set up logging to a file
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
 
 def main():
     prod_url = os.environ.get("PROD_URL")
